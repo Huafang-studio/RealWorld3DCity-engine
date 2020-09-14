@@ -1,0 +1,184 @@
+# RealWorld3DCity
+A near-real 3D city engine
+An adapted and changed 3D city engine for generation of urban building models in near-real degree.
+The results of the engine is based on a case study in Sheffield.
+Key changes and adaptations are shown as following.
+
+The achievement of real world location:
+
+      """Arrange the models in a grid."""
+    i += 1
+    if i > n:
+        raise NameError("i cannot be bigger than n.")
+
+    #-- Size of the grid (\)
+    #gridsize = int(round(sqrt(n),0))
+    gridsize = int(5)
+    column = trunc(float(i-1)/float(gridsize))
+    if column > 0:
+        row = i % (gridsize * column + 1)
+    elif column == 0:
+        row = i - 1
+
+    #-- Size of the grid cells
+    sx = CELLSIZE
+    dislist = [25, 28]
+
+    #-- Calculate the displacement of one unit after rotation
+    a = math.pi
+    xm = xs - xs * (math.cos(32/180 * a)) 
+    ym = xs * (math.sin(32/180 * a))
+
+    #-- Calcalate the distance between every two lines of buildings
+    if row % 2 != 0:
+        sy = dislist[0] * int((row + 1)/2) + dislist[1] * trunc(row/2)
+    else:
+        sy = (dislist[0]+ dislist[1]) * int(row/2)
+
+    return shiftx + column*sx - column * xm, shifty + sy + column * ym, 0, [column, row]
+
+The position of the reference building:
+
+    """Arranges the location of each building."""
+    if crs is not None:
+        if crs == 'Sheffield':
+            shiftx = 400951.07
+            shifty = 5914123.49
+
+ The building orientation:
+
+    #-- Angle of building in degrees (2D plane)
+    angle = etree.SubElement(building, "rotation")
+    angle.text = str(round(random.uniform(120, 120.5), 2))
+
+Building boundary dimension, roof type and attached structures:
+
+    #-- Randomise dimensions of the building body (width, length) in metres
+    xs = 9
+    ys = 10
+    #-- Randomise the number of storeys and their height
+    floors = 2
+    floorHeight = 3.5
+    #-- Choose the roof type
+    rtype = rooftypes[3] #-- Gabled roof type
+    elif rtype == 'Shed' or rtype == 'Gabled':
+    #-- h is the height from the eaves
+    h = etree.SubElement(roof, "h")
+    h.text = str(round(random.uniform(3.2, 3.5), 2))
+
+Procedures for dormers and roof windows: 
+
+    #-- Randomise dormer size
+    rfwinWidth = round(random.uniform(1.5,2.4), 2)
+    rfwinHeight = round(random.uniform(0.5, 0.6), 2)
+
+    #-- Randomise roof window size
+    rfwinWidth = round(random.uniform(1.2,1.5), 2)
+    rfwinHeight = round(random.uniform(0.5, 0.6), 2)
+
+Doors parameter changes:
+
+    #-- Door   
+    doors = []
+    heightOfOrigin = round(random.uniform(0.1, 0.15), 2)
+    widthW = 1.1
+    heightW = 2.1
+    #-- For every side on 1st floor
+    for side in range(0, 4):
+        #-- Fixed size doors:
+        if side == 0 or side == 2:
+            continue
+        elif side == 1 or side == 3:
+            nodoors = 2
+
+        fixed = [widthW, heightW, nodoors, heightOfOrigin]  
+        for result in realdoor(side, nodoors, xs, ys, zs, floorHeight, fixed):
+            doors.append(result)
+
+    #-- Store the doors in the XML
+    if len(doors) > 0:
+        doorsXML = etree.SubElement(building, "doors")
+        for d in doors:
+            currDoor = etree.SubElement(doorsXML, "door")
+            currdoorFace = etree.SubElement(currDoor, "wall")
+            currdoorFace.text = str(d['side'])
+
+            currdoorSize = etree.SubElement(currDoor, "size")
+            currdoorSizeX = etree.SubElement(currdoorSize, "width")
+            currdoorSizeX.text = str(d['width'])
+            currdoorSizeY = etree.SubElement(currdoorSize, "height")
+            currdoorSizeY.text = str(d['height'])
+
+            currdoorOrigin = etree.SubElement(currDoor, "origin")
+            currdoorOriginX = etree.SubElement(currdoorOrigin, "x")
+            currdoorOriginX.text = str(d['originX'])
+            currdoorOriginY = etree.SubElement(currdoorOrigin, "y")        
+            currdoorOriginY.text = str(d['originY'])
+
+Doors generation procedures:
+
+        if i == 1:
+            firstW = 0.3 
+            d['originX'] = firstW 
+            d['width'] = fixed[0]
+            d['height'] = fixed[1]
+            doriginY = fixed[3]
+            d['originY'] = doriginY
+            d['side'] = str(side)
+            res.append(d)
+        else:
+            firstW = 8.5 
+            d['width'] = fixed[0]
+            d['height'] = fixed[1]
+            doriginY = fixed[3]
+            d['originY'] = doriginY
+            d['side'] = str(side)
+            d['originX'] = firstW
+            res.append(d)
+
+Wall window generation:
+
+    #-- Procedures for wall windows
+    storeyheight = floorHeight
+    #-- List of dictionaries
+    windows = []
+    if zs >= storeyheight:
+        nofloors = floors
+        heightOfOrigin = round(random.uniform(1, 1.5), 2)
+        #-- For every side on every floor
+        signal = order[1]    
+        for side in range(0, 4):
+            #-- Fixed size windows:
+            widthW_1 = 1.8
+            widthW_2 = 0.9
+            heightW_1 = 2.1
+            heightW_2 = 1.8
+
+            if side == 0 or side == 2:
+                continue
+            elif side == 1 or side == 3: 
+                nowindows = 2
+
+            fixed_1 = [widthW_1, heightW_1, nowindows, heightOfOrigin]
+            fixed_2 = [widthW_2, heightW_2, nowindows, heightOfOrigin]
+
+            for fl in range(1, nofloors+1):
+                if fl == 1:   
+                    if signal % 2 != 0:
+                        if side == 3:
+                            fixed = fixed_1
+                        else:
+                            fixed = fixed_2
+
+                    elif signal % 2 == 0:
+                        if side == 1:
+                            fixed = fixed_1
+                        else:
+                            fixed = fixed_2
+
+                    for result in randomwindow(side, fl, xs, ys, zs, floorHeight, fixed):
+                        windows.append(result)
+                else:
+                    fixed = fixed_2
+                    for result in randomwindow(side, fl, xs, ys, zs, floorHeight, fixed):
+                            windows.append(result)
